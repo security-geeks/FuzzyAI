@@ -66,7 +66,10 @@
 
 1. Run the Web UI (make sure you completed either of the installation steps from above):
    ```bash
-   poetry run fuzzyai webui
+    poetry run fuzzyai webui
+    
+    # Or specify a custom port:
+    poetry run fuzzyai webui --port 9000
    ```
 
 ## Notebooks
