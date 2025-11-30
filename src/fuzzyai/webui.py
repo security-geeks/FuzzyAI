@@ -26,7 +26,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.sidebar.image("resources/logo.png", width=175)
+logo_path = Path(__file__).parent / "resources" / "logo.png"
+st.sidebar.image(str(logo_path), width=175)
 
 defaults = {
     "env_vars": {},
