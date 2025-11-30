@@ -5,6 +5,7 @@ import logging
 import shlex
 import subprocess
 import sys
+import socket
 from pathlib import Path
 from typing import Any, Optional
 
@@ -63,6 +64,16 @@ class LoadFromFile (argparse.Action):
                     cli_args += f"--{k} {v} "
 
             parser.parse_args(shlex.split(cli_args), namespace)
+
+def find_available_port(start_port: int, max_attempts: int = 100) -> int:
+    """
+    Find an available port starting from start_port
+    """
+    for port in range(start_port, start_port + max_attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('localhost', port)) != 0:
+                return port
+    raise RuntimeError(f"Could not find an available port in range {start_port}-{start_port + max_attempts}")
 
 async def run_fuzzer(args: argparse.Namespace) -> None:
     """
@@ -190,7 +201,10 @@ async def run_webui(args: argparse.Namespace) -> None:
     """
     Run the web UI
     """
-    port = 8080
+    if args.port:
+        port = args.port
+    else:
+        port = find_available_port(8080)
     
     process = subprocess.Popen(
         ["streamlit", "run", "src/fuzzyai/webui.py", "--server.port", str(port)],
@@ -199,7 +213,7 @@ async def run_webui(args: argparse.Namespace) -> None:
     )
     
     await asyncio.sleep(2)
-    print("Web UI is running at http://localhost:8080, Use Ctrl+C to exit")
+    print(f"Web UI is running at http://localhost:{port}, Use Ctrl+C to exit")
     process.wait()
 
 async def run_cli() -> None:
@@ -213,6 +227,7 @@ async def run_cli() -> None:
     subparsers = parser.add_subparsers(dest='command', required=True)
 
     webui_fuzzer = subparsers.add_parser('webui', help='Run the web UI')
+    webui_fuzzer.add_argument('-p', '--port', help='Port to run the web UI on', type=int, default=None)
     webui_fuzzer.set_defaults(func=run_webui)
 
     fuzz_parser = subparsers.add_parser('fuzz', help='Run the fuzzer')
